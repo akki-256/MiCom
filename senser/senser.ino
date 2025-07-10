@@ -1,3 +1,12 @@
+//力を検知するための閾値はこのように指定してください
+//int strong = 
+
+//ピンの指定もここでお願いします
+//int xPin = 
+//int yPin = 
+//int zPin = 
+//int sendPin = 割り込み用のピン
+
 void setup() {
   Serial.begin(9600);
 }
