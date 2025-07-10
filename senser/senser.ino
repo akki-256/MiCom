@@ -1,22 +1,20 @@
 // --- 力を検知するための閾値 ---
-const int thresholdWeak = 300;
-const int thresholdMedium = 550;
-const int thresholdStrong = 800;
+const int weakThreshold = 300;
+const int mediumThreshold = 550;
+const int strongThreshold = 800;
 
 // --- ピンの指定 ---
 const int xPin = A0;
 const int yPin = A1;
 const int zPin = A2;
-const int sendPin = 2;  // 割り込み信号を送るピン(D2)
+const int sendPin = 2;  // 割り込み通知用ピン
 
-// --- 状態管理 ---
-bool sentFlag = false;        // 重複送信防止用フラグ
-unsigned long lastSendTime = 0;
+unsigned long lastHitTime = 0;  // クールダウン用
 
 void setup() {
   Serial.begin(9600);
   pinMode(sendPin, OUTPUT);
-  digitalWrite(sendPin, LOW); // 初期状態はLOW
+  digitalWrite(sendPin, LOW);
 }
 
 void loop() {
@@ -26,35 +24,31 @@ void loop() {
   int z = abs(analogRead(zPin) - 500);
   int strength = x + y + z - 200;
 
-  // 振ったことを検知（一定の時間を空ける）
-  if (!sentFlag && strength > thresholdWeak) {
-    String level = "";
+  unsigned long now = millis();
 
-    if (strength >= thresholdStrong) {
-      level = "STRONG";
-    } else if (strength >= thresholdMedium) {
-      level = "MEDIUM";
-    } else if (strength >= thresholdWeak) {
-      level = "WEAK";
-    }
+  // クールダウン期間を設けて同じ振りを連続検出しないようにする
+  if (now - lastHitTime < 750) return;
 
-    // シリアル通信でLED側に送信（振った強さを送る）
-    Serial.print("HIT:");
-    Serial.println(level);
-
-    // 割り込み信号をHIGHで出力（相手が受け取ったらLOWに戻す）
-    digitalWrite(sendPin, HIGH);
-    delay(10);  // 割り込み検出のために短時間HIGH
-    digitalWrite(sendPin, LOW);
-
-    sentFlag = true;
-    lastSendTime = millis();
+  // 振りを検知（強さを判定）
+  String level = "";
+  if (strength >= strongThreshold) {
+    level = "STRONG";
+  } else if (strength >= mediumThreshold) {
+    level = "MEDIUM";
+  } else if (strength >= weakThreshold) {
+    level = "WEAK";
   }
 
-  // クールダウン（同じ振りを何度も検知しないように）
-  if (sentFlag && millis() - lastSendTime > 750) {
-    sentFlag = false;
+  if (level != "") {
+    Serial.println(level);       // 強さを送信
+    delay(10);                   // 通信安定のための短い待機
+
+    digitalWrite(sendPin, HIGH); // 割り込み信号を送信
+    delay(50);                   // 相手側に伝わるように少し保持
+    digitalWrite(sendPin, LOW);  // 割り込み信号を終了
+
+    lastHitTime = now;           // 最終検出時間を更新
   }
 
-  delay(50); // 読み取り間隔調整
+  delay(10);  // 通信負荷軽減
 }
