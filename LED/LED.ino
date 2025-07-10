@@ -1,6 +1,5 @@
-void setup() {
-}
+//LEDアニメーション表示用の関数
 
-void draw() {
-  
+showAnimation(){
+
 }
