@@ -85,7 +85,6 @@ void loop() {
   drawPatch(6, 24, man_in_the_mirror);  // 右下（下段）
  
   showMatrix();
-  delay(1000);
 }
 
 // matrixへ8×10の画像を貼り付け
