@@ -63,27 +63,19 @@ int parabola_high[5][9]]={
 
 int matrix[ROWS][COLS]={};
  
-void setup() {
-  Serial.begin(9600);
+void LEDsetup(){
   for (int i = 0; i < 8; i++) {
     lc.shutdown(i, false);
     lc.setIntensity(i, 8);
     lc.clearDisplay(i);
   }
-}
- 
-void loop() {
-  // matrix 全体をクリア
-  for (int r = 0; r < ROWS; r++) {
-    for (int c = 0; c < COLS; c++) {
-      matrix[r][c] = 0;
-    }
-  }
- 
   // manを左上、man_in_the_mirrorを右下に表示
   drawPatch(6, 0, man);             // 左上（上段）
   drawPatch(6, 24, man_in_the_mirror);  // 右下（下段）
- 
+}
+
+void LEDloop(){
+  BollaAnime();
   showMatrix();
 }
 
