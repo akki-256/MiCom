@@ -4,33 +4,33 @@
 
 #define ROWS 16
 #define COLS 32
- 
+
 LedControl lc = LedControl(11, 13, 10, 8);
- 
+
 int man[10][8] = {
-{0, 1, 1, 1, 0, 0, 0, 0},
-{0, 1, 0, 1, 0, 0, 1, 1},
-{0, 1, 1, 1, 0, 0, 1, 1},
-{0, 0, 1, 0, 0, 1, 0, 0},
-{0, 0, 1, 1, 1, 0, 0, 0},
-{0, 0, 1, 0, 0, 0, 0, 0},
-{0, 1, 1, 1, 0, 0, 1, 0},
-{0, 1, 0, 1, 1, 0, 0, 0},
-{1, 1, 0, 0, 1, 0, 0, 0},
-{1, 0, 0, 0, 1, 0, 0, 0},
+  { 0, 1, 1, 1, 0, 0, 0, 0 },
+  { 0, 1, 0, 1, 0, 0, 1, 1 },
+  { 0, 1, 1, 1, 0, 0, 1, 1 },
+  { 0, 0, 1, 0, 0, 1, 0, 0 },
+  { 0, 0, 1, 1, 1, 0, 0, 0 },
+  { 0, 0, 1, 0, 0, 0, 0, 0 },
+  { 0, 1, 1, 1, 0, 0, 1, 0 },
+  { 0, 1, 0, 1, 1, 0, 0, 0 },
+  { 1, 1, 0, 0, 1, 0, 0, 0 },
+  { 1, 0, 0, 0, 1, 0, 0, 0 },
 };
 //左上3行８列に貼り付ける
 int man_in_the_mirror[10][8] = {
-{0, 0, 0, 0, 1, 1, 1, 0},
-{1, 1, 0, 0, 1, 0, 1, 0},
-{1, 1, 0, 0, 1, 1, 1, 0},
-{0, 0, 1, 0, 0, 1, 0, 0},
-{0, 0, 0, 1, 1, 0, 0, 0},
-{0, 0, 0, 0, 0, 0, 0, 0},
-{0, 0, 0, 0, 0, 1, 1, 0},
-{0, 0, 0, 0, 1, 1, 1, 0},
-{0, 0, 0, 0, 1, 0, 1, 1},
-{0, 0, 0, 0, 1, 0, 0, 1},
+  { 0, 0, 0, 0, 1, 1, 1, 0 },
+  { 1, 1, 0, 0, 1, 0, 1, 0 },
+  { 1, 1, 0, 0, 1, 1, 1, 0 },
+  { 0, 0, 1, 0, 0, 1, 0, 0 },
+  { 0, 0, 0, 1, 1, 0, 0, 0 },
+  { 0, 0, 0, 0, 0, 0, 0, 0 },
+  { 0, 0, 0, 0, 0, 1, 1, 0 },
+  { 0, 0, 0, 0, 1, 1, 1, 0 },
+  { 0, 0, 0, 0, 1, 0, 1, 1 },
+  { 0, 0, 0, 0, 1, 0, 0, 1 },
 };
 //左上3行８列に貼り付ける対称図形のため逆から読み込むことで拡張できる
 //一列ずつ読み込み前列を削除することにより球が動いているように見せる
@@ -60,24 +60,23 @@ int parabola_high[5][9]]={
 {1, 1, 0, 0, 0, 0, 0, 0, 0},
 };
 
+int matrix[ROWS][COLS] = {};
 
-int matrix[ROWS][COLS]={};
- 
-void LEDsetup(){
-  for (int i = 0; i < 8; i++) {
-    lc.shutdown(i, false);
-    lc.setIntensity(i, 8);
-    lc.clearDisplay(i);
-  }
-  // manを左上、man_in_the_mirrorを右下に表示
-  drawPatch(6, 0, man);             // 左上（上段）
-  drawPatch(6, 24, man_in_the_mirror);  // 右下（下段）
-}
+// void LEDsetup(){
+//   for (int i = 0; i < 8; i++) {
+//     lc.shutdown(i, false);
+//     lc.setIntensity(i, 8);
+//     lc.clearDisplay(i);
+//   }
+//   // manを左上、man_in_the_mirrorを右下に表示
+//   drawPatch(6, 0, man);             // 左上（上段）
+//   drawPatch(6, 24, man_in_the_mirror);  // 右下（下段）
+// }
 
-void LEDloop(){
-  BollaAnime();
-  showMatrix();
-}
+// void LEDloop(){
+//   BollaAnime();
+//   showMatrix();
+// }
 
 // matrixへ8×10の画像を貼り付け
 void drawPatch(int destRow, int destCol, int src[10][8]) {
@@ -92,12 +91,12 @@ void drawPatch(int destRow, int destCol, int src[10][8]) {
   }
 }
 
-void BollaAnime(){
+void BollaAnime() {
   if (!isAnimating) return;
 
   unsigned long now = millis();
   int interval = intervalTable[speedLevel];
-  int frame = (now - lastHitMillis) / interval;
+  int frame = (now - interruptTime) / interval;
 
   if (frame >= 18) {
     isAnimating = false;
@@ -107,10 +106,9 @@ void BollaAnime(){
 
   if (frame != currentFrame) {
     // 軌道配列を選択
-    byte (*path)[18] =
-      (speedLevel == 0) ? parabola_low :
-      (speedLevel == 1) ? parabola_middle :
-                          parabola_high;
+    byte(*path)[18] =
+      (speedLevel == 0) ? parabola_low : (speedLevel == 1) ? parabola_middle
+                                                           : parabola_high;
 
     // 前の位置を消す（範囲外アクセス防止）
     if (currentFrame >= 0 && currentFrame < 18) {
@@ -126,16 +124,15 @@ void BollaAnime(){
 
     currentFrame = frame;
   }
-  
 }
 
 void showMatrix() {
   //上段
-  for(int i = 0; i<4; i++){
-    int dev = 3 - i; 
+  for (int i = 0; i < 4; i++) {
+    int dev = 3 - i;
     for (int row = 0; row < 8; row++) {
 
-      lc.setRow(dev, row, convertbit(row,i*8));
+      lc.setRow(dev, row, convertbit(row, i * 8));
     }
   }
   //下段
@@ -149,15 +146,15 @@ void showMatrix() {
 }
 
 //配列をビット列に変換 左→右
-byte convertbit(int row,int start){
+byte convertbit(int row, int start) {
   byte value = 0;
   for (int i = 0; i < 8; i++) {
-      value <<= 1;               // 左に1ビットシフト
-      value |= matrix[row][start+i];       // ビットを追加
-    }
-    return value;
+    value <<= 1;                      // 左に1ビットシフト
+    value |= matrix[row][start + i];  // ビットを追加
+  }
+  return value;
 }
- 
+
 // 下段用：右→左（左右反転）
 byte convertbitFlipCol(int row, int start) {
   byte value = 0;
