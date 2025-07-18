@@ -1,12 +1,14 @@
-int interruptPin = 2;  //割り込み信号用ピン　　D2,D3のみ
+int interruptPin = 2;//割り込み信号用ピン　　D2,D3のみ
 
-volatile unsigned interruptTime = 0;     //割り込み発生時の時間
-volatile unsigned playerMovingTime = 0;  //自分のターンでの振られた時間
-bool isAnimating = false;                //アニメーションが動いているか
-short ballSpeed = -1;  //現在のボールのスピード
+volatile unsigned int interruptTime = 0;     //割り込み発生時の時間
+volatile unsigned int playerMovingTime = 0;  //自分のターンでの振られた時間
+short ballSpeed = 0;  //現在のボールのスピード
 bool interrupt = false;
 bool playerTurn;                  //自分のターン
-unsigned int soundStartTime = 0;  //効果音が発生した時間
+volatile unsigned int soundStartTime = 0;  //効果音が発生した時間
+unsigned int cpuTargetTime = 0;
+unsigned int cpuMovingTime = 0;
+
 
 void setup() {
   //割り込み設定(割り込み発火監視ピン，割り込み時走らせる関数，モード)
@@ -25,7 +27,7 @@ void setup() {
   //ユーザにサーブを打たせる
   while (interruptTime <= 0) {}
   ballSpeed = 1;
-  cpuTargetTime = millis()+//球のスピードが中のときの時間
+  cpuTargetTime = millis()+1500;
   soundStartTime = millis();
   playerTurn = true;
   interrupt = false;
@@ -35,19 +37,19 @@ void loop() {
   if (playerTurn) {
     //プレイヤーが打った後，その時間を記憶し，
     //その時間からプレイヤーからの球の強さを加味したタイミングを計算，ランダムな強さで球を返す
-    cpuStrong = couJudge();  //このときに，playerTurnをfalseに
+    cpuJudge();  //このときに，playerTurnをfalseに
   } else {
     //cpuが打った後，その時間を記録し
     //プレイヤが振った後，適切に振られていることをチェック
     if (interrupt && !playerTurn) {
-      playerJadge();  //この関数の副作用でplayerTurnをtrueにする
+      ballSpeed,soundStartTime = playerJudge(soundStartTime);  //この関数の副作用でplayerTurnをtrueにする
       interrupt = false;
     }
   }
 
-  playSound(ballSpeed);
-  playerMove();            //プレイヤが振った時に画面上の人も動作を行う
-  BollaAnime(playerTurn);  //playerTurnがtrueならボールの起動はプレイヤ→cpu，falseならボールの起動はcpu→プレイヤ
+  playSound();
+  // playerMove();            //プレイヤが振った時に画面上の人も動作を行う
+  BollaAnime(ballSpeed,playerTurn,playerTurn? playerMovingTime:cpuMovingTime);  //playerTurnがtrueならボールの起動はプレイヤ→cpu，falseならボールの起動はcpu→プレイヤ
   showMatrix();
 }
 

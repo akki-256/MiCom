@@ -1,6 +1,6 @@
 //音を再生する関数
 
-const int speakerPin = A0;　//スピーカ接続用ピン
+const int speakerPin = 0;//スピーカ接続用ピン
 
 //弱，中，強を受け取る
 void playSound() {

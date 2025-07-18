@@ -3,9 +3,9 @@
 
 //BollaAnime()について
 //アニメーションを描写するかどうか管理する変数を用意してね！本ぷろぐらむisAnimatingにあたる
-//打たれた時間を保存する変数を用意してね！本プログラムlastHitMillisにあたる
-//スピードを管理する変数を用意してね！本プログラムspeedLevelにあたる
-//誰のターンか管理する変数を用意してね！本ぷろぐらむplayerturnにあたる
+//打たれた時間を保存する変数を用意してね！本プログラムplayerMovingTimeにあたる////
+//スピードを管理する変数を用意してね！本プログラムspeedLevelにあたる////
+//誰のターンか管理する変数を用意してね！本ぷろぐらむplayerTurnにあたる//
 //以上の変数をグローバル関数として定義するか引数として定義して
 //以下BollaAnime()でしか参照しないであろうグローバル変数一覧
 //parabola_low,parabola_middle,parabola_high,intervalTable,currentFrame
@@ -21,10 +21,7 @@
 LedControl lc = LedControl(11, 13, 10, 8);
 
 
-bool isAnimating = false;                 //アニメーションを描写するかどうか
-unsigned long lastHitMillis = 3000;     // 打ち返した時刻
-int speedLevel = 2;                  // 0: low, 1: middle, 2: high
-bool playerturn=false;            //誰のターンか管理する変数
+bool isAnimating = true;                 //アニメーションを描写するかどうか
 
 //BollaAnime()でしか参照しないであろうグローバル変数
 const int intervalTable[3] = {900, 700, 500};//ドットが移動するまでのインターバル
@@ -32,7 +29,7 @@ int currentFrame = -1;            // 今のボール位置（0〜8列）初期�
 //左上3行８列に貼り付ける．対称図形のため逆から読み込むことで拡張できるkedoそのまま書いた
 //一列ずつ読み込み前列を削除することにより球が動いているように見せる
 //弱の軌道
-int parabola_low[5][16]={
+short parabola_low[5][16]={
 {0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0},
 {0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0},
 {0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0},
@@ -40,7 +37,7 @@ int parabola_low[5][16]={
 {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
 };
 //中の軌道
-int parabola_middle[5][16]={
+short parabola_middle[5][16]={
 {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 {0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0},
 {0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0},
@@ -48,7 +45,7 @@ int parabola_middle[5][16]={
 {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
 };
 //強の軌道
-int parabola_high[5][16]={
+short parabola_high[5][16]={
 {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 {0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0},
@@ -57,7 +54,7 @@ int parabola_high[5][16]={
 };
 
  
-int man[10][8] = {
+short man[10][8] = {
 {0, 1, 1, 1, 0, 0, 0, 0},
 {0, 1, 0, 1, 0, 0, 1, 1},
 {0, 1, 1, 1, 0, 0, 1, 1},
@@ -70,7 +67,7 @@ int man[10][8] = {
 {1, 0, 0, 0, 1, 0, 0, 0},
 };
 //左上3行８列に貼り付ける
-int man_in_the_mirror[10][8] = {
+short man_in_the_mirror[10][8] = {
 {0, 0, 0, 0, 1, 1, 1, 0},
 {1, 1, 0, 0, 1, 0, 1, 0},
 {1, 1, 0, 0, 1, 1, 1, 0},
@@ -85,7 +82,7 @@ int man_in_the_mirror[10][8] = {
 };
 
 
-int matrix[ROWS][COLS]={};
+short matrix[ROWS][COLS]={};
 
 //確認用
 // void setup(){
@@ -110,14 +107,8 @@ void LEDsetup(){
   drawPatch(6, 24, man_in_the_mirror);  // 右下（下段）
 }
 
-void LEDloop(){
-  BollaAnime();
-
-  showMatrix();
-}
-
 // matrixへ8×10の画像を貼り付け
-void drawPatch(int destRow, int destCol, int src[10][8]) {
+void drawPatch(int destRow, int destCol, short src[10][8]) {
   for (int r = 0; r < 10; r++) {
     for (int c = 0; c < 8; c++) {
       int row = destRow + r;
@@ -129,16 +120,16 @@ void drawPatch(int destRow, int destCol, int src[10][8]) {
   }
 }
 
-void BollaAnime() {
+void BollaAnime(int ballSpeed,bool playerTurn, unsigned int MovingTime) {
   if (!isAnimating) return;
 
   unsigned long now = millis();
-  int interval = intervalTable[speedLevel];
+  int interval = intervalTable[ballSpeed];
   int frame;
-  if(playerturn){
-    frame = 15-(now - lastHitMillis) / interval;
+  if(playerTurn){
+    frame = 15-(now - MovingTime) / interval;
   }else{
-    frame = (now - lastHitMillis) / interval;
+    frame = (now - MovingTime) / interval;
   }
 
   if (frame >= 16||frame <= -1) {
@@ -148,9 +139,9 @@ void BollaAnime() {
   }
   if (frame != currentFrame) {
     // 軌道配列を選択
-    int (*path)[16] =
-      (speedLevel == 0) ? parabola_low :
-      (speedLevel == 1) ? parabola_middle :
+    short (*path)[16] =
+      (ballSpeed == 0) ? parabola_low :
+      (ballSpeed == 1) ? parabola_middle :
                           parabola_high;
 
     // 前の位置を消す（範囲外アクセス防止）
