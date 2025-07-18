@@ -31,13 +31,13 @@ void loop() {
   // if (now - lastHitTime < 750) return;
 
   // 振りを検知（強さを判定）
-  String level = "";
+  int level = -1;
   if (strength >= strongThreshold) {
-    level = "STRONG";
+    level = 2;
   } else if (strength >= mediumThreshold) {
-    level = "MEDIUM";
+    level = 1;
   } else if (strength >= weakThreshold) {
-    level = "WEAK";
+    level = 0;
   }
 
   if (level != "") {

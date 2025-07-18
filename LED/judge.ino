@@ -29,7 +29,7 @@ void playerJudge() {
   //   return;
   // }
 
-  int racketStrong = analogRead(racketStrongPin);
+  int racketStrong = Serial.read();
   if (playerMovingTime - playerTargetTime < 1000 )return;
 
   switch (racketStrong) {
