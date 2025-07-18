@@ -17,7 +17,7 @@
 
 #define ROWS 16
 #define COLS 32
- 
+
 LedControl lc = LedControl(11, 13, 10, 8);
 
 
@@ -81,6 +81,7 @@ int man_in_the_mirror[10][8] = {
 {0, 0, 0, 0, 1, 1, 1, 0},
 {0, 0, 0, 0, 1, 0, 1, 1},
 {0, 0, 0, 0, 1, 0, 0, 1},
+
 };
 
 
@@ -128,7 +129,7 @@ void drawPatch(int destRow, int destCol, int src[10][8]) {
   }
 }
 
-void BollaAnime(){
+void BollaAnime() {
   if (!isAnimating) return;
 
   unsigned long now = millis();
@@ -139,7 +140,6 @@ void BollaAnime(){
   }else{
     frame = (now - lastHitMillis) / interval;
   }
-  
 
   if (frame >= 16||frame <= -1) {
     isAnimating = false;
@@ -166,13 +166,12 @@ void BollaAnime(){
     }
     currentFrame = frame;
   }
-  
 }
 
 void showMatrix() {
   //上段
-  for(int i = 0; i<4; i++){
-    int dev = 3 - i; 
+  for (int i = 0; i < 4; i++) {
+    int dev = 3 - i;
     for (int row = 0; row < 8; row++) {
       lc.setRow(dev, row, convertbit(row,i*8));
     }
@@ -188,15 +187,15 @@ void showMatrix() {
 }
 
 //配列をビット列に変換 左→右
-byte convertbit(int row,int start){
+byte convertbit(int row, int start) {
   byte value = 0;
   for (int i = 0; i < 8; i++) {
-      value <<= 1;               // 左に1ビットシフト
-      value |= matrix[row][start+i];       // ビットを追加
-    }
-    return value;
+    value <<= 1;                      // 左に1ビットシフト
+    value |= matrix[row][start + i];  // ビットを追加
+  }
+  return value;
 }
- 
+
 // 下段用：右→左（左右反転）
 byte convertbitFlipCol(int row, int start) {
   byte value = 0;
