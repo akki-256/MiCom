@@ -3,9 +3,10 @@
 const int speakerPin = A0;　//スピーカ接続用ピン
 
 //弱，中，強を受け取る
-void playSound(int strong,int currentTime) {
-  unsigned long time = millis() - currentTime;         //割り込みから何ms経っているか
-  switch (strong) {
+void playSound() {
+  if(soundStartTime == 0)return;
+  unsigned long time = millis() - soundStartTime;         //割り込みから何ms経っているか
+  switch (ballSpeed) {
     case 0://強
       strongPowerSound(time);
       break;
@@ -31,6 +32,7 @@ void strongPowerSound(unsigned long time) {
     tone(speakerPin, 2000);
   } else {
     noTone(speakerPin);
+    soundStartTime = 0;
   }
 }
 
@@ -41,6 +43,7 @@ void middlePowerSound(unsigned long time) {
     tone(speakerPin, 1100);
   } else {
     noTone(speakerPin);
+    soundStartTime = 0;
   }
 }
 
@@ -53,5 +56,6 @@ void lowPowerSound(unsigned long time) {
     tone(speakerPin, 900);
   } else {
     noTone(speakerPin);
+    soundStartTime = 0;
   }
 }
