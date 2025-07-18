@@ -40,7 +40,8 @@ void loop() {
     level = 0;
   }
 
-  if (level != "") {
+  if (level != -1) {
+    Serial.println(strength);
     Serial.println(level);       // 強さを送信
     delay(10);                   // 通信安定のための短い待機
 
