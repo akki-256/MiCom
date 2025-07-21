@@ -6,33 +6,9 @@
 
 LedControl lc = LedControl(11, 13, 10, 8);
 
-bool isAnimating = true;                         //アニメーションを描写するかどうか
-const int intervalTable[3] = { 1000/16, 2000/16, 3000/16 };  //ドットが移動するまでのインターバル
-int currentFrame = -1;                           // 今のボール位置（0〜8列）初期値を-1として宣言すること
-//弱の軌道
-int parabola_low[5][8] = {
-  { 0, 0, 0, 0, 0, 0, 1, 1 },
-  { 0, 0, 0, 0, 1, 1, 0, 0 },
-  { 0, 0, 1, 1, 0, 0, 0, 0 },
-  { 0, 1, 0, 0, 0, 0, 0, 0 },
-  { 1, 0, 0, 0, 0, 0, 0, 0 },
-};
-//中の軌道
-int parabola_middle[5][8] = {
-  { 0, 0, 0, 0, 0, 0, 0, 0 },
-  { 0, 0, 0, 0, 0, 0, 1, 1 },
-  { 0, 0, 0, 1, 1, 1, 0, 0 },
-  { 0, 1, 1, 0, 0, 0, 0, 0 },
-  { 1, 0, 0, 0, 0, 0, 0, 0 },
-};
-//強の軌道
-int parabola_high[5][8] = {
-  { 0, 0, 0, 0, 0, 0, 0, 0 },
-  { 0, 0, 0, 0, 0, 0, 0, 0 },
-  { 0, 0, 0, 0, 0, 0, 1, 1 },
-  { 0, 0, 1, 1, 1, 1, 0, 0 },
-  { 1, 1, 0, 0, 0, 0, 0, 0 },
-};
+bool isAnimating = true;                                           //アニメーションを描写するかどうか
+const int intervalTable[3] = { 3000 / 16, 2000 / 16, 1000 / 16 };  //ドットが移動するまでのインターバル
+int currentFrame = -1;                                             // 今のボール位置（0〜8列）初期値を-1として宣言すること
 
 int man[10][8] = {
   { 0, 1, 1, 1, 0, 0, 0, 0 },
@@ -59,6 +35,7 @@ void LEDsetup() {
   int mirror[10][8];
   man_in_the_mirror(mirror, man);
   drawPatch(6, 24, mirror);  // 右下（下段）
+  showMatrix();
 }
 
 // matrixへ8×10の画像を貼り付け
@@ -82,13 +59,21 @@ void man_in_the_mirror(int dest[10][8], int src[10][8]) {
   }
 }
 
-void BollaAnime(int ballSpeed, bool isBallMovingToCpu, unsigned int MovingTime) {
+void BollaAnime(int ballSpeed, bool isBallMovingToCpu, long MovingTime) {
   if (!isAnimating) return;
 
+  //弱の軌道
+  int parabola_low[5][16] = {
+    { 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0 },
+    { 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0 },
+    { 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0 },
+    { 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0 },
+    { 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+  };
   unsigned long now = millis();
   int interval = intervalTable[ballSpeed];
   int frame;
-  if (isBallMovingToCpu) {
+  if (!isBallMovingToCpu) {
     frame = 15 - (now - MovingTime) / interval;
   } else {
     frame = (now - MovingTime) / interval;
@@ -100,11 +85,6 @@ void BollaAnime(int ballSpeed, bool isBallMovingToCpu, unsigned int MovingTime) 
     return;
   }
   if (frame != currentFrame) {
-    // 軌道配列を選択
-    int(*path)[8] =
-      (ballSpeed == 0) ? parabola_low : (ballSpeed == 1) ? parabola_middle
-                                                         : parabola_high;
-
     // 前の位置を消す（範囲外アクセス防止）
     if (currentFrame >= 0 && currentFrame < 16) {
       for (int r = 0; r < 5; r++) {
@@ -114,14 +94,21 @@ void BollaAnime(int ballSpeed, bool isBallMovingToCpu, unsigned int MovingTime) 
 
     // 新しい位置を描画
     for (int r = 0; r < 5; r++) {
-      if (currentFrame < 7) {
-        matrix[r + 3][frame + 8] = path[r][frame];
-      } else {
-        matrix[r + 3][frame + 8] = path[r][15 - frame];
-      }
+      matrix[r + 3][frame + 8] = parabola_low[r][frame];
     }
     currentFrame = frame;
   }
+}
+
+void clearBall() {
+  // ボールが描画される可能性のある中央エリアを全て0にする
+  // 範囲は matrix の8列目から23列目まで (16列分)
+  for (int r = 3; r < 8; r++) { // ボールが描画される縦の範囲
+    for (int c = 8; c < 24; c++) { // ボールが描画される横の範囲
+      matrix[r][c] = 0;
+    }
+  }
+  currentFrame = -1; // フレーム位置も確実にリセット
 }
 
 void showMatrix() {
