@@ -1,6 +1,6 @@
 // --- 力を検知するための閾値 ---
-const int weakThreshold = 300;
-const int mediumThreshold = 550;
+const int weakThreshold = 500;
+const int mediumThreshold = 640;
 const int strongThreshold = 800;
 
 // --- ピンの指定 ---
@@ -9,7 +9,13 @@ const int yPin = A1;
 const int zPin = A2;
 const int sendPin = 2;  // 割り込み通知用ピン
 
-unsigned long lastHitTime = 0;  // クールダウン用
+// --- 動作設定 ---
+
+// --- 状態管理のための変数 ---
+enum SwingState { IDLE, SWINGING }; // 「待機中」と「スイング中」の状態を定義
+SwingState currentState = IDLE;     // 現在の状態
+int peakLevelInSwing = -1;          // 現在のスイングで検出された力の最大レベル
+unsigned long lastHitTime = 0;      // 最後にスイングを検出した時刻
 
 void setup() {
   Serial.begin(9600);
@@ -18,39 +24,55 @@ void setup() {
 }
 
 void loop() {
-  
-  // センサから値を取得
   int x = abs(analogRead(xPin) - 500);
   int y = abs(analogRead(yPin) - 500);
   int z = abs(analogRead(zPin) - 500);
   int strength = x + y + z - 200;
 
-  // unsigned long now = millis();
-
-  // // クールダウン期間を設けて同じ振りを連続検出しないようにする
-  // if (now - lastHitTime < 750) return;
-
-  // 振りを検知（強さを判定）
-  int level = -1;
+  int currentLevel = -1; // 今回のループでの力のレベル
   if (strength >= strongThreshold) {
-    level = 2;
+    currentLevel = 2;
   } else if (strength >= mediumThreshold) {
-    level = 1;
+    currentLevel = 1;
   } else if (strength >= weakThreshold) {
-    level = 0;
+    currentLevel = 0;
   }
 
-  if (level != -1) {
-    Serial.println(strength);
-    Serial.println(level);       // 強さを送信
-    delay(10);                   // 通信安定のための短い待機
+  // --- 3. ステートマシンによるスイング判定 ---
+  switch (currentState) {
+    case IDLE:
+      // 「待機中」にスイングが始まったら (閾値を超えたら)
+      if (currentLevel != -1) {
+        currentState = SWINGING;        // 状態を「スイング中」へ移行
+        peakLevelInSwing = currentLevel;  // ピークレベルを初期化
+      }
+      break;
 
-    digitalWrite(sendPin, HIGH); // 割り込み信号を送信
-    delay(50);                   // 相手側に伝わるように少し保持
-    digitalWrite(sendPin, LOW);  // 割り込み信号を終了
-    delay(700);
-    // lastHitTime = now;           // 最終検出時間を更新
+    case SWINGING:
+      // 「スイング中」の処理
+      if (currentLevel != -1) {
+        // 現在の力が今までのピークより強ければ、ピークを更新
+        if (currentLevel > peakLevelInSwing) {
+          peakLevelInSwing = currentLevel;
+        }
+      } else {
+        // スイングが終わったら (力が閾値を下回ったら)
+        
+        // ★ 検出したピークレベルを送信 ★
+        Serial.write(peakLevelInSwing);
+        delay(10);
+
+        // ★ 割り込み信号を送信 ★
+        digitalWrite(sendPin, HIGH);
+        delay(10); // 相手が確実に検知するための保持時間
+        digitalWrite(sendPin, LOW);
+
+        delay(700);
+        // 最後に振った時刻を記録し、クールダウンを開始
+        
+        // 状態を「待機中」に戻し、次のスイングに備える
+        currentState = IDLE;
+      }
+      break;
   }
-
-  // delay(10);  // 通信負荷軽減
 }

@@ -1,18 +1,4 @@
-//LEDアニメーション表示用の関数
-//BollaAnime()とshowMatrix()を使ってね！
-
-//BollaAnime()について
-//アニメーションを描写するかどうか管理する変数を用意してね！本ぷろぐらむisAnimatingにあたる
-//打たれた時間を保存する変数を用意してね！本プログラムlastHitMillisにあたる
-//スピードを管理する変数を用意してね！本プログラムspeedLevelにあたる
-//誰のターンか管理する変数を用意してね！本ぷろぐらむplayerturnにあたる
-//以上の変数をグローバル関数として定義するか引数として定義して
-//以下BollaAnime()でしか参照しないであろうグローバル変数一覧
-//parabola_low,parabola_middle,parabola_high,intervalTable,currentFrame
-
-//showMatrix()について
-
-
+#include "header.h"
 #include <LedControl.h>
 
 #define ROWS 16
@@ -20,99 +6,35 @@
 
 LedControl lc = LedControl(11, 13, 10, 8);
 
+bool isAnimating = true;                                           //アニメーションを描写するかどうか
+const int intervalTable[3] = { 3000 / 16, 2000 / 16, 1000 / 16 };  //ドットが移動するまでのインターバル
+int currentFrame = -1;                                             // 今のボール位置（0〜8列）初期値を-1として宣言すること
 
-bool isAnimating = false;                 //アニメーションを描写するかどうか
-unsigned long lastHitMillis = 3000;     // 打ち返した時刻
-int speedLevel = 2;                  // 0: low, 1: middle, 2: high
-bool playerturn=false;            //誰のターンか管理する変数
-
-//BollaAnime()でしか参照しないであろうグローバル変数
-const int intervalTable[3] = {900, 700, 500};//ドットが移動するまでのインターバル
-int currentFrame = -1;            // 今のボール位置（0〜8列）初期値を-1として宣言すること
-//左上3行８列に貼り付ける．対称図形のため逆から読み込むことで拡張できるkedoそのまま書いた
-//一列ずつ読み込み前列を削除することにより球が動いているように見せる
-//弱の軌道
-int parabola_low[5][16]={
-{0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0},
-{0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0},
-{0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0},
-{0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0},
-{1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-};
-//中の軌道
-int parabola_middle[5][16]={
-{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-{0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0},
-{0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0},
-{0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0},
-{1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-};
-//強の軌道
-int parabola_high[5][16]={
-{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-{0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0},
-{0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0},
-{1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1},
-};
-
- 
 int man[10][8] = {
-{0, 1, 1, 1, 0, 0, 0, 0},
-{0, 1, 0, 1, 0, 0, 1, 1},
-{0, 1, 1, 1, 0, 0, 1, 1},
-{0, 0, 1, 0, 0, 1, 0, 0},
-{0, 0, 1, 1, 1, 0, 0, 0},
-{0, 0, 1, 0, 0, 0, 0, 0},
-{0, 1, 1, 1, 0, 0, 0, 0},
-{0, 1, 0, 1, 1, 0, 0, 0},
-{1, 1, 0, 0, 1, 0, 0, 0},
-{1, 0, 0, 0, 1, 0, 0, 0},
-};
-//左上3行８列に貼り付ける
-int man_in_the_mirror[10][8] = {
-{0, 0, 0, 0, 1, 1, 1, 0},
-{1, 1, 0, 0, 1, 0, 1, 0},
-{1, 1, 0, 0, 1, 1, 1, 0},
-{0, 0, 1, 0, 0, 1, 0, 0},
-{0, 0, 0, 1, 1, 1, 0, 0},
-{0, 0, 0, 0, 0, 1, 0, 0},
-{0, 0, 0, 0, 0, 1, 1, 0},
-{0, 0, 0, 0, 1, 1, 1, 0},
-{0, 0, 0, 0, 1, 0, 1, 1},
-{0, 0, 0, 0, 1, 0, 0, 1},
-
+  { 0, 1, 1, 1, 0, 0, 0, 0 },
+  { 0, 1, 0, 1, 0, 0, 1, 1 },
+  { 0, 1, 1, 1, 0, 0, 1, 1 },
+  { 0, 0, 1, 0, 0, 1, 0, 0 },
+  { 0, 0, 1, 1, 1, 0, 0, 0 },
+  { 0, 0, 1, 0, 0, 0, 0, 0 },
+  { 0, 1, 1, 1, 0, 0, 0, 0 },
+  { 0, 1, 0, 1, 1, 0, 0, 0 },
+  { 1, 1, 0, 0, 1, 0, 0, 0 },
+  { 1, 0, 0, 0, 1, 0, 0, 0 },
 };
 
+int matrix[ROWS][COLS] = {};
 
-int matrix[ROWS][COLS]={};
-
-//確認用
-// void setup(){
-//   LEDsetup();
-//   while (!Serial);
-// }
-// void loop(){
-//   if(millis()>3000&&millis()<19000){
-//     isAnimating=true;
-//   }
-//   LEDloop();
-// }
-
-void LEDsetup(){
+void LEDsetup() {
   for (int i = 0; i < 8; i++) {
     lc.shutdown(i, false);
     lc.setIntensity(i, 8);
     lc.clearDisplay(i);
   }
-  // manを左上、man_in_the_mirrorを右下に表示
-  drawPatch(6, 0, man);             // 左上（上段）
-  drawPatch(6, 24, man_in_the_mirror);  // 右下（下段）
-}
-
-void LEDloop(){
-  BollaAnime();
-
+  drawPatch(6, 0, man);  // 左上（上段）
+  int mirror[10][8];
+  man_in_the_mirror(mirror, man);
+  drawPatch(6, 24, mirror);  // 右下（下段）
   showMatrix();
 }
 
@@ -129,30 +51,40 @@ void drawPatch(int destRow, int destCol, int src[10][8]) {
   }
 }
 
-void BollaAnime() {
+void man_in_the_mirror(int dest[10][8], int src[10][8]) {
+  for (int r = 0; r < 10; r++) {
+    for (int c = 0; c < 8; c++) {
+      dest[r][7 - c] = src[r][c];
+    }
+  }
+}
+
+void BollaAnime(int ballSpeed, bool isBallMovingToCpu, long MovingTime) {
   if (!isAnimating) return;
 
+  //弱の軌道
+  int parabola_low[5][16] = {
+    { 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0 },
+    { 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0 },
+    { 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0 },
+    { 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0 },
+    { 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+  };
   unsigned long now = millis();
-  int interval = intervalTable[speedLevel];
+  int interval = intervalTable[ballSpeed];
   int frame;
-  if(playerturn){
-    frame = 15-(now - lastHitMillis) / interval;
-  }else{
-    frame = (now - lastHitMillis) / interval;
+  if (!isBallMovingToCpu) {
+    frame = 15 - (now - MovingTime) / interval;
+  } else {
+    frame = (now - MovingTime) / interval;
   }
 
-  if (frame >= 16||frame <= -1) {
+  if (frame >= 16 || frame <= -1) {
     isAnimating = false;
     currentFrame = -1;
     return;
   }
   if (frame != currentFrame) {
-    // 軌道配列を選択
-    int (*path)[16] =
-      (speedLevel == 0) ? parabola_low :
-      (speedLevel == 1) ? parabola_middle :
-                          parabola_high;
-
     // 前の位置を消す（範囲外アクセス防止）
     if (currentFrame >= 0 && currentFrame < 16) {
       for (int r = 0; r < 5; r++) {
@@ -162,10 +94,21 @@ void BollaAnime() {
 
     // 新しい位置を描画
     for (int r = 0; r < 5; r++) {
-      matrix[r + 3][frame + 8] = path[r][frame];
+      matrix[r + 3][frame + 8] = parabola_low[r][frame];
     }
     currentFrame = frame;
   }
+}
+
+void clearBall() {
+  // ボールが描画される可能性のある中央エリアを全て0にする
+  // 範囲は matrix の8列目から23列目まで (16列分)
+  for (int r = 3; r < 8; r++) { // ボールが描画される縦の範囲
+    for (int c = 8; c < 24; c++) { // ボールが描画される横の範囲
+      matrix[r][c] = 0;
+    }
+  }
+  currentFrame = -1; // フレーム位置も確実にリセット
 }
 
 void showMatrix() {
@@ -173,7 +116,7 @@ void showMatrix() {
   for (int i = 0; i < 4; i++) {
     int dev = 3 - i;
     for (int row = 0; row < 8; row++) {
-      lc.setRow(dev, row, convertbit(row,i*8));
+      lc.setRow(dev, row, convertbit(row, i * 8));
     }
   }
   //下段
@@ -205,4 +148,3 @@ byte convertbitFlipCol(int row, int start) {
   }
   return value;
 }
-

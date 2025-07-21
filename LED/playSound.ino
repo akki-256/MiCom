@@ -1,20 +1,21 @@
+#include "header.h"
 //音を再生する関数
 
-const int speakerPin = A0;　//スピーカ接続用ピン
+const int speakerPin = A0; //スピーカ接続用ピン
 
 //弱，中，強を受け取る
 void playSound() {
   if(soundStartTime == 0)return;
   unsigned long time = millis() - soundStartTime;         //割り込みから何ms経っているか
   switch (ballSpeed) {
-    case 0://強
-      strongPowerSound(time);
+    case 0://弱
+      lowPowerSound(time);
       break;
     case 1://中
       middlePowerSound(time);
       break;
-    case 2://弱
-      lowPowerSound(time);
+    case 2://強
+      strongPowerSound(time);
       break;
   }
 }
